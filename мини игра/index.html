@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Билим Ордо - Билим Жолу</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        }
+        .selection-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 4px solid #f1f5f9;
+        }
+        .selection-option.selected {
+            border-color: #4f46e5;
+            background: #f5f3ff;
+            transform: scale(1.05);
+        }
+        .knowledge-path {
+            height: 80px;
+            background: #e2e8f0;
+            border-radius: 40px;
+            position: relative;
+            margin: 40px 0;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border: 4px solid #fff;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .path-finish {
+            position: absolute;
+            right: 15px;
+            font-size: 24px;
+        }
+        #player-avatar {
+            position: absolute;
+            left: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+        .avatar-img {
+            font-size: 45px;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+            animation: bounce 2s infinite ease-in-out;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateX(8px);
+            background: #f5f3ff;
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .step-hidden { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Кадамдык каттоо экраны -->
+    <div id="auth-screen" class="fixed inset-0 bg-indigo-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl w-full max-w-xl text-center animate-pop">
+            
+            <div id="step-1">
+                <h2 class="text-3xl font-black text-gray-800 mb-2">Кош келиңиз!</h2>
+                <p class="text-gray-500 mb-8 font-bold">Атыңызды жазыңыз</p>
+                <input type="text" id="username-input" placeholder="Мисалы: Айбек..." class="w-full p-5 border-2 border-gray-100 rounded-2xl mb-8 focus:border-indigo-500 outline-none transition text-center text-xl font-bold">
+                <button onclick="nextStep(2)" class="w-full bg-indigo-600 text-white p-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition">Кийинки ➡️</button>
+            </div>
+
+            <div id="step-2" class="step-hidden">
+                <h2 class="text-3xl font-black text-gray-800 mb-2">Жынысыңызды тандаңыз</h2>
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="selection-option p-6 rounded-3xl" id="gender-male" onclick="selectGender('male')">
+                        <div class="text-6xl mb-2">👦</div>
+                        <p class="font-black text-gray-600 uppercase">Эркек</p>
+                    </div>
+                    <div class="selection-option p-6 rounded-3xl" id="gender-female" onclick="selectGender('female')">
+                        <div class="text-6xl mb-2">👧</div>
+                        <p class="font-black text-gray-600 uppercase">Аял</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="nextStep(1)" class="w-1/3 bg-gray-100 text-gray-600 p-5 rounded-2xl font-black transition">Арткы</button>
+                    <button onclick="nextStep(3)" id="btn-to-step-3" class="w-2/3 bg-indigo-600 text-white p-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition opacity-50 cursor-not-allowed" disabled>Кийинки ➡️</button>
+                </div>
+            </div>
+
+            <div id="step-3" class="step-hidden">
+                <h2 class="text-3xl font-black text-gray-800 mb-2">Ролуңуз ким?</h2>
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="selection-option p-6 rounded-3xl" id="role-student" onclick="selectRole('student')">
+                        <div class="text-6xl mb-2">🎒</div>
+                        <p class="font-black text-gray-600 uppercase">Окуучу</p>
+                    </div>
+                    <div class="selection-option p-6 rounded-3xl" id="role-teacher" onclick="selectRole('teacher')">
+                        <div class="text-6xl mb-2">👩‍🏫</div>
+                        <p class="font-black text-gray-600 uppercase">Мугалим</p>
+                    </div>
+                </div>
+                <div id="teacher-code-area" class="hidden mb-6 animate-pop">
+                    <p class="text-xs text-red-500 font-bold uppercase mb-2">Мугалимдин кодун киргизиңиз</p>
+                    <input type="password" id="teacher-pass" placeholder="Код: 2024" class="w-full p-4 border-2 border-gray-100 rounded-2xl focus:border-red-400 outline-none text-center font-bold">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="nextStep(2)" class="w-1/3 bg-gray-100 text-gray-600 p-5 rounded-2xl font-black transition">Арткы</button>
+                    <button onclick="handleRegister()" id="btn-finish" class="w-2/3 bg-indigo-600 text-white p-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition opacity-50 cursor-not-allowed" disabled>Баштоо 🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- НЕГИЗГИ ТАЛАА -->
+    <div id="main-layout" class="hidden max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <aside class="lg:col-span-1">
+            <div class="glass-card p-8 sticky top-8 text-center border border-white">
+                <div id="profile-avatar-box" class="w-32 h-32 bg-indigo-100 rounded-[40px] mx-auto mb-6 flex items-center justify-center text-6xl">👤</div>
+                <h3 id="user-display-name" class="text-2xl font-black text-gray-800 mb-1">Оюнчу</h3>
+                <p id="user-role-display" class="text-indigo-500 font-bold text-xs uppercase tracking-widest mb-6">Окуучу</p>
+                <div id="stats-box" class="bg-slate-50 rounded-2xl p-4 mb-6">
+                    <p class="text-xs text-gray-400 uppercase font-bold mb-1">Жалпы упай</p>
+                    <p id="total-score" class="text-3xl font-black text-indigo-700">0</p>
+                </div>
+                <div id="teacher-controls" class="hidden space-y-3 mb-6">
+                    <button onclick="showTeacherCabinet()" class="w-full bg-red-500 text-white p-5 rounded-2xl font-black text-sm hover:bg-red-600 transition shadow-lg transform hover:-translate-y-1">➕ ЖАҢЫ ТАПШЫРМА</button>
+                </div>
+                <button onclick="logout()" class="text-gray-400 font-bold text-xs hover:text-red-500 transition">АККАУНТТАН ЧЫГУУ</button>
+            </div>
+        </aside>
+
+        <main class="lg:col-span-3">
+            <div id="subject-selector">
+                <h2 class="text-4xl font-black text-gray-800 mb-8">Сабактар</h2>
+                <div id="subjects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+
+            <div id="teacher-cabinet" class="hidden glass-card p-6 md:p-10 animate-pop">
+                <div class="flex justify-between items-center mb-8 border-b pb-6">
+                    <div>
+                        <h2 class="text-3xl font-black text-gray-800">Мугалимдин кабинети</h2>
+                        <p class="text-gray-500 font-medium">Жаңы суроолорду кошуңуз</p>
+                    </div>
+                    <button onclick="backToSubjects()" class="bg-gray-100 hover:bg-gray-200 p-4 rounded-2xl transition text-2xl">✕</button>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                    <div class="space-y-6">
+                        <div class="bg-indigo-50 p-6 rounded-[32px]">
+                            <label class="block text-xs font-black text-indigo-400 uppercase mb-3 tracking-widest">1. Сабакты тандаңыз</label>
+                            <select id="new-q-subject" class="w-full p-5 bg-white border-2 border-transparent focus:border-indigo-500 rounded-2xl outline-none font-bold text-gray-700 shadow-sm transition">
+                                <option value="math">📐 Математика</option>
+                                <option value="kyrgyz">🇰🇬 Кыргыз тили</option>
+                                <option value="history">📜 Тарых</option>
+                                <option value="english">🇬🇧 Англис тили</option>
+                                <option value="biology">🧬 Биология</option>
+                                <option value="geography">🌍 География</option>
+                            </select>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-[32px]">
+                            <label class="block text-xs font-black text-gray-400 uppercase mb-3 tracking-widest">2. Суроо тексти</label>
+                            <textarea id="new-q-text" class="w-full p-5 bg-white border-2 border-transparent focus:border-indigo-500 rounded-2xl outline-none font-bold text-gray-700 shadow-sm transition" rows="4" placeholder="Мисалы: Кыргызстандын борбору кайсы шаар?"></textarea>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-[32px] space-y-4">
+                        <label class="block text-xs font-black text-gray-400 uppercase mb-1 tracking-widest">3. Жооп варианттары</label>
+                        <p class="text-[10px] text-green-600 font-bold uppercase mb-4">* Биринчи уячага туура жоопту жазыңыз</p>
+                        <div class="space-y-4">
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-green-500 font-black">✓</span>
+                                <input type="text" id="new-q-opt1" placeholder="Туура жооп" class="w-full pl-10 pr-5 py-5 bg-white border-2 border-green-100 focus:border-green-400 rounded-2xl font-bold shadow-sm outline-none transition">
+                            </div>
+                            <input type="text" id="new-q-opt2" placeholder="Ката вариант 1" class="w-full p-5 bg-white border-2 border-transparent focus:border-indigo-400 rounded-2xl font-bold shadow-sm outline-none transition">
+                            <input type="text" id="new-q-opt3" placeholder="Ката вариант 2" class="w-full p-5 bg-white border-2 border-transparent focus:border-indigo-400 rounded-2xl font-bold shadow-sm outline-none transition">
+                            <input type="text" id="new-q-opt4" placeholder="Ката вариант 3" class="w-full p-5 bg-white border-2 border-transparent focus:border-indigo-400 rounded-2xl font-bold shadow-sm outline-none transition">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-10 pt-6 border-t">
+                    <button onclick="addNewQuestion()" class="w-full bg-indigo-600 text-white p-8 rounded-[30px] font-black text-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition transform hover:scale-[1.01] active:scale-95">СУРООНУ КОШУУ ✅</button>
+                </div>
+            </div>
+
+            <!-- Quiz Area -->
+            <div id="quiz-area" class="hidden">
+                <div class="knowledge-path mb-8">
+                    <div id="player-avatar">
+                        <div id="path-avatar-icon" class="avatar-img">👦</div>
+                    </div>
+                    <div class="path-finish">🏁</div>
+                </div>
+                <div class="glass-card p-8 md:p-12 animate-pop">
+                    <div class="flex justify-between items-center mb-10">
+                        <div id="question-counter" class="bg-indigo-100 text-indigo-700 px-6 py-2 rounded-2xl font-black tracking-widest uppercase">СУРОО 1</div>
+                        <div id="current-session-score" class="font-black text-green-600">УПАЙ: 0</div>
+                    </div>
+                    <div id="question-box">
+                        <h2 id="question-text" class="text-2xl md:text-3xl font-black text-gray-800 mb-10 leading-tight"></h2>
+                        <div id="options-container" class="grid grid-cols-1 gap-4"></div>
+                    </div>
+                    <div id="feedback" class="mt-8 p-6 rounded-2xl text-center font-black hidden"></div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="hidden glass-card p-16 text-center animate-pop">
+                <div id="result-icon" class="text-8xl mb-6">🏆</div>
+                <h2 id="result-title" class="text-4xl font-black text-gray-800 mb-4">Бүттү!</h2>
+                <p id="result-text" class="text-xl text-gray-600 mb-10"></p>
+                <button onclick="backToSubjects()" class="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xl hover:bg-indigo-700 transition shadow-lg">Башкы бетке</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const INITIAL_DATA = [
+            {
+                id: "math", name: "Математика", icon: "📐", color: "bg-blue-500",
+                questions: [
+                    { q: "45 + 15 = ?", options: ["60", "50", "70", "55"], correct: 0 },
+                    { q: "10 * 10 = ?", options: ["100", "1000", "20", "1"], correct: 0 },
+                    { q: "25тин квадраты канча?", options: ["625", "525", "650", "600"], correct: 0 },
+                    { q: "144түн тамыры канча?", options: ["12", "14", "16", "10"], correct: 0 },
+                    { q: "Үч бурчтуктун ички бурчтарынын суммасы?", options: ["180°", "360°", "90°", "120°"], correct: 0 },
+                    { q: "98 - 39 = ?", options: ["59", "69", "49", "58"], correct: 0 },
+                    { q: "Биринчи жөнөкөй сан кайсы?", options: ["2", "1", "3", "0"], correct: 0 },
+                    { q: "5тин кубу (5^3) канча?", options: ["125", "25", "75", "150"], correct: 0 },
+                    { q: "1 саатта канча секунд бар?", options: ["3600", "60", "600", "360"], correct: 0 },
+                    { q: "Тик бурчтуктун аянты кантип табылат?", options: ["S=a*b", "S=a+b", "S=2(a+b)", "S=a^2"], correct: 0 },
+                    { q: "0,5ти пайызга айлантсак?", options: ["50%", "5%", "0.5%", "500%"], correct: 0 },
+                    { q: "81 / 9 + 5 = ?", options: ["14", "13", "15", "16"], correct: 0 }
+                ]
+            },
+            {
+                id: "kyrgyz", name: "Кыргыз тили", icon: "🇰🇬", color: "bg-red-500",
+                questions: [
+                    { q: "Кыргыз алфавитинде канча тамга бар?", options: ["36", "39", "33", "40"], correct: 0 },
+                    { q: "Зат атоочтун суроолору?", options: ["Ким? Эмне?", "Кандай? Кайсы?", "Канча? Нече?", "Эмне кылды?"], correct: 0 },
+                    { q: "Кыргыз тилинде канча жөндөмө бар?", options: ["6", "7", "5", "8"], correct: 0 },
+                    { q: "Созулма үндүүлөр канча?", options: ["6", "8", "12", "4"], correct: 0 },
+                    { q: "«Ай» деген сөзгө мүчө ула: Ай...?", options: ["дын", "ты", "дан", "га"], correct: 0 },
+                    { q: "Этиш эмнени билдирет?", options: ["Кыймыл-аракетти", "Заттын атын", "Заттын сынын", "Заттын санын"], correct: 0 },
+                    { q: "«Акылдуу» сөзүнө антоним тап?", options: ["Акымак", "Тартиптүү", "Жакшы", "Чоң"], correct: 0 },
+                    { q: "Кыргыз тили мамлекеттик тил болуп качан кабыл алынган?", options: ["1989-ж, 23-сентябрь", "1991-ж, 31-август", "1993-ж, 5-май", "1924-ж, 14-октябрь"], correct: 0 },
+                    { q: "Тыбыш менен тамганын айырмасы?", options: ["Тыбышты угабыз, тамганы жазабыз", "Айырмасы жок", "Тыбышты жазабыз", "Тамганы угабыз"], correct: 0 },
+                    { q: "Мүчөлөр канчага бөлүнөт?", options: ["2 (курама, өзгөртүүчү)", "3", "4", "5"], correct: 0 },
+                    { q: "Сын атоочтун суроолору?", options: ["Кандай? Кайсы?", "Ким? Эмне?", "Качан?", "Кайда?"], correct: 0 },
+                    { q: "«Китеп» сөзү кайсы жөндөмөдө турат?", options: ["Атооч", "Илик", "Барыш", "Түшүм"], correct: 0 }
+                ]
+            },
+            {
+                id: "history", name: "Тарых", icon: "📜", color: "bg-amber-600",
+                questions: [
+                    { q: "Кыргызстан качан эгемендүүлүк алган?", options: ["1991", "1990", "1995", "1989"], correct: 0 },
+                    { q: "Барсбек каган кайсы кылымда жашаган?", options: ["VII-VIII к.", "V к.", "X к.", "XII к."], correct: 0 },
+                    { q: "Улуу Жибек Жолунун негизги багыты кайда өткөн?", options: ["Кыргызстан аркылуу", "Африка аркылуу", "Америка аркылуу", "Япония аркылуу"], correct: 0 },
+                    { q: "Кыргыз АССРи кайсы жылы түзүлгөн?", options: ["1926", "1924", "1936", "1991"], correct: 0 },
+                    { q: "Манас баатырдын күмбөзү кайда?", options: ["Таласта", "Ошто", "Нарында", "Бишкекте"], correct: 0 },
+                    { q: "Курманжан Датка ким болгон?", options: ["Алай ханышасы", "Акын", "Балерина", "Сүрөтчү"], correct: 0 },
+                    { q: "Кыргыз Республикасынын биринчи Конституциясы качан кабыл алынган?", options: ["1993-ж, 5-май", "1991-ж, 31-август", "2010-ж, 27-июнь", "1924-ж, 7-ноябрь"], correct: 0 },
+                    { q: "Энесай кыргыздарынын каганаты качан гүлдөп өскөн?", options: ["IX к.", "VI к.", "XIII к.", "XV к."], correct: 0 },
+                    { q: "Жусуп Баласагын ким болгон?", options: ["Окумуштуу, акын", "Хан", "Аскер башчы", "Саякатчы"], correct: 0 },
+                    { q: "СССР качан тараган?", options: ["1991", "1985", "1993", "1990"], correct: 0 },
+                    { q: "Экинчи Дүйнөлүк согуш качан бүткөн?", options: ["1945", "1941", "1939", "1950"], correct: 0 },
+                    { q: "Түрк каганаты качан негизделген?", options: ["552-жылы", "652-жылы", "452-жылы", "752-жылы"], correct: 0 }
+                ]
+            },
+            {
+                id: "english", name: "Англис тили", icon: "🇬🇧", color: "bg-indigo-500",
+                questions: [
+                    { q: "'Apple' кыргызча кандай которулат?", options: ["Алма", "Өрүк", "Нан", "Суу"], correct: 0 },
+                    { q: "'Hello' деген эмне?", options: ["Салам", "Кош бол", "Рахмат", "Кечириңиз"], correct: 0 },
+                    { q: "Англис тилинде канча тамга бар?", options: ["26", "24", "33", "20"], correct: 0 },
+                    { q: "'Red' кайсы түс?", options: ["Кызыл", "Көк", "Жашыл", "Сары"], correct: 0 },
+                    { q: "'School' сөзүнүн котормосу?", options: ["Мектеп", "Оорукана", "Дүкөн", "Парк"], correct: 0 },
+                    { q: "'Mother' ким?", options: ["Апа", "Ата", "Эже", "Байке"], correct: 0 },
+                    { q: "I ... a student.", options: ["am", "is", "are", "be"], correct: 0 },
+                    { q: "How are you?", options: ["I am fine", "I am a boy", "Yes", "No"], correct: 0 },
+                    { q: "'Water' деген эмне?", options: ["Суу", "Шире", "Сүт", "Чай"], correct: 0 },
+                    { q: "'Book' сөзүнүн көптүк түрү?", options: ["Books", "Bookes", "Bookies", "Book"], correct: 0 },
+                    { q: "Monday кайсы күн?", options: ["Дүйшөмбү", "Шейшемби", "Жекшемби", "Ишемби"], correct: 0 },
+                    { q: "'Cat' деген эмне?", options: ["Мышык", "Ит", "Ат", "Кой"], correct: 0 }
+                ]
+            },
+            {
+                id: "biology", name: "Биология", icon: "🧬", color: "bg-green-500",
+                questions: [
+                    { q: "Адамдын денесиндеги эң негизги орган?", options: ["Жүрөк", "Тиш", "Чач", "Тырмак"], correct: 0 },
+                    { q: "Фотосинтез үчүн эмне керек?", options: ["Күн нуру", "Түн", "Таш", "Туздар"], correct: 0 },
+                    { q: "Өсүмдүктөрдүн дем алуу органы?", options: ["Жалбырак", "Тамыр", "Гүл", "Сабак"], correct: 0 },
+                    { q: "Клетканы ким ачкан?", options: ["Роберт Гук", "Чарльз Дарвин", "Менделеев", "Ньютон"], correct: 0 },
+                    { q: "Адамдын канында канча топ бар?", options: ["4", "3", "2", "5"], correct: 0 },
+                    { q: "Балыктар эмнеси менен дем алат?", options: ["Бакалоор", "Өпкө", "Тери", "Мурун"], correct: 0 },
+                    { q: "Сүт эмүүчүлөргө ким кирет?", options: ["Уй", "Бака", "Жылан", "Көпөлөк"], correct: 0 },
+                    { q: "Витамин С кайсы жемиште көп?", options: ["Лимон", "Нан", "Эт", "Күрүч"], correct: 0 },
+                    { q: "ДНКнын формасы кандай?", options: ["Кош спираль", "Түз сызык", "Тегерек", "Үч бурчтук"], correct: 0 },
+                    { q: "Микроскоп эмне үчүн керек?", options: ["Майда нерсени көрүү үчүн", "Угуу үчүн", "Жазганга", "Чуркаганга"], correct: 0 },
+                    { q: "Жүрөк канча камерадан турат?", options: ["4", "2", "3", "1"], correct: 0 },
+                    { q: "Эң чоң жаныбар кайсы?", options: ["Көк кит", "Пил", "Жираф", "Акула"], correct: 0 }
+                ]
+            },
+            {
+                id: "geography", name: "География", icon: "🌍", color: "bg-cyan-500",
+                questions: [
+                    { q: "Эң бийик тоо кайсы?", options: ["Эверест", "Хан-Тенгри", "Ленин чокусу", "К-2"], correct: 0 },
+                    { q: "Кыргызстандын борбору?", options: ["Бишкек", "Ош", "Нарын", "Талас"], correct: 0 },
+                    { q: "Дүйнөдө канча океан бар?", options: ["5", "4", "3", "6"], correct: 0 },
+                    { q: "Ысык-Көл кайсы облуста?", options: ["Ысык-Көл", "Чүй", "Нарын", "Ош"], correct: 0 },
+                    { q: "Эң чоң материк?", options: ["Евразия", "Африка", "Антарктида", "Америка"], correct: 0 },
+                    { q: "Жердин формасы кандай?", options: ["Шар (геоид)", "Квадрат", "Түз", "Үч бурчтук"], correct: 0 },
+                    { q: "Кыргызстандын эң бийик чокусу?", options: ["Жеңиш чокусу", "Хан-Тенгри", "Ленин", "Манас"], correct: 0 },
+                    { q: "Египет кайсы материкте?", options: ["Африка", "Азия", "Европа", "Австралия"], correct: 0 },
+                    { q: "Кыргызстан кайсы мамлекет менен чектешпейт?", options: ["Россия", "Кытай", "Өзбекстан", "Казакстан"], correct: 0 },
+                    { q: "Эң чоң чөл?", options: ["Сахара", "Гоби", "Кара-Кум", "Атакама"], correct: 0 },
+                    { q: "Кыргызстандагы эң узун дарыя?", options: ["Нарын", "Чүй", "Талас", "Ак-Буура"], correct: 0 },
+                    { q: "Дүйнөдөгү эң терең көл?", options: ["Байкал", "Ысык-Көл", "Виктория", "Мичиган"], correct: 0 }
+                ]
+            }
+        ];
+
+        let currentUser = { name: "", gender: "", role: "", charIcon: "", totalScore: 0 };
+        let subjectData = [];
+        let activeSubject = null;
+        let currentQIdx = 0;
+        let sessionScore = 0;
+        const SECRET_TEACHER_CODE = "2024";
+
+        window.onload = () => {
+            const savedUser = localStorage.getItem('bilim_user');
+            const savedData = localStorage.getItem('bilim_data');
+            
+            if (savedData) {
+                subjectData = JSON.parse(savedData);
+            } else {
+                subjectData = INITIAL_DATA;
+                localStorage.setItem('bilim_data', JSON.stringify(subjectData));
+            }
+            
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMain();
+            }
+        };
+
+        function nextStep(step) {
+            if (step === 2) {
+                const name = document.getElementById('username-input').value.trim();
+                if (name.length < 2) return;
+                currentUser.name = name;
+            }
+            document.querySelectorAll('[id^="step-"]').forEach(el => el.classList.add('step-hidden'));
+            document.getElementById(`step-${step}`).classList.remove('step-hidden');
+        }
+
+        function selectGender(gender) {
+            currentUser.gender = gender;
+            document.querySelectorAll('#step-2 .selection-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`gender-${gender}`).classList.add('selected');
+            document.getElementById('btn-to-step-3').disabled = false;
+            document.getElementById('btn-to-step-3').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function selectRole(role) {
+            currentUser.role = role;
+            document.querySelectorAll('#step-3 .selection-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`role-${role}`).classList.add('selected');
+            const teacherArea = document.getElementById('teacher-code-area');
+            if (role === 'teacher') teacherArea.classList.remove('hidden');
+            else teacherArea.classList.add('hidden');
+            document.getElementById('btn-finish').disabled = false;
+            document.getElementById('btn-finish').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function handleRegister() {
+            if (currentUser.role === 'teacher') {
+                const code = document.getElementById('teacher-pass').value;
+                if (code !== SECRET_TEACHER_CODE) {
+                    alert("Мугалимдин коду ката!");
+                    return;
+                }
+            }
+            currentUser.charIcon = currentUser.role === 'teacher' ? 
+                (currentUser.gender === 'male' ? '👨‍🏫' : '👩‍🏫') : 
+                (currentUser.gender === 'male' ? '👦' : '👧');
+            localStorage.setItem('bilim_user', JSON.stringify(currentUser));
+            document.getElementById('auth-screen').classList.add('hidden');
+            showMain();
+        }
+
+        function showMain() {
+            document.getElementById('main-layout').classList.remove('hidden');
+            document.getElementById('user-display-name').innerText = currentUser.name;
+            document.getElementById('profile-avatar-box').innerText = currentUser.charIcon;
+            document.getElementById('total-score').innerText = currentUser.totalScore;
+            document.getElementById('user-role-display').innerText = currentUser.role === 'teacher' ? 'МУГАЛИМ' : 'ОКУУЧУ';
+            if (currentUser.role === 'teacher') {
+                document.getElementById('teacher-controls').classList.remove('hidden');
+            }
+            renderSubjects();
+        }
+
+        function renderSubjects() {
+            const grid = document.getElementById('subjects-grid');
+            grid.innerHTML = '';
+            subjectData.forEach(sub => {
+                const card = document.createElement('div');
+                card.className = `glass-card p-8 cursor-pointer flex items-center space-x-6 border-2 border-transparent hover:border-indigo-500 animate-pop transition-all transform hover:-translate-y-1`;
+                card.innerHTML = `
+                    <div class="${sub.color} w-16 h-16 rounded-2xl flex items-center justify-center text-3xl text-white shadow-lg">${sub.icon}</div>
+                    <div>
+                        <h3 class="text-xl font-black text-gray-800">${sub.name}</h3>
+                        <p class="text-xs text-gray-400 font-bold tracking-widest">${sub.questions.length} ТАПШЫРМА</p>
+                    </div>
+                `;
+                card.onclick = () => startQuiz(sub);
+                grid.appendChild(card);
+            });
+            document.getElementById('subject-selector').classList.remove('hidden');
+            document.getElementById('teacher-cabinet').classList.add('hidden');
+            document.getElementById('quiz-area').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+        }
+
+        function showTeacherCabinet() {
+            document.getElementById('subject-selector').classList.add('hidden');
+            document.getElementById('teacher-cabinet').classList.remove('hidden');
+        }
+
+        function addNewQuestion() {
+            const subId = document.getElementById('new-q-subject').value;
+            const qText = document.getElementById('new-q-text').value.trim();
+            const options = [
+                document.getElementById('new-q-opt1').value.trim(),
+                document.getElementById('new-q-opt2').value.trim(),
+                document.getElementById('new-q-opt3').value.trim(),
+                document.getElementById('new-q-opt4').value.trim()
+            ].filter(o => o !== "");
+            if (!qText || options.length < 2) {
+                alert("Суроону жана кеминде эки вариантты толтуруңуз!");
+                return;
+            }
+            const subIndex = subjectData.findIndex(s => s.id === subId);
+            subjectData[subIndex].questions.push({ q: qText, options: options, correct: 0 });
+            localStorage.setItem('bilim_data', JSON.stringify(subjectData));
+            alert("Жаңы тапшырма кошулду! ✅");
+            backToSubjects();
+        }
+
+        function startQuiz(sub) {
+            if (sub.questions.length === 0) {
+                alert("Бул сабакта азырынча суроолор жок.");
+                return;
+            }
+            activeSubject = JSON.parse(JSON.stringify(sub));
+            currentQIdx = 0;
+            sessionScore = 0;
+            activeSubject.shuffledQuestions = activeSubject.questions.map(q => {
+                const opts = q.options.map((text, i) => ({ text, isCorrect: i === q.correct }));
+                return { ...q, displayOptions: opts.sort(() => Math.random() - 0.5) };
+            }).sort(() => Math.random() - 0.5);
+            document.getElementById('subject-selector').classList.add('hidden');
+            document.getElementById('quiz-area').classList.remove('hidden');
+            document.getElementById('path-avatar-icon').innerText = currentUser.charIcon;
+            updateAvatarPos();
+            showQ();
+        }
+
+        function updateAvatarPos() {
+            const total = activeSubject.shuffledQuestions.length;
+            const percentage = (currentQIdx / total) * 90;
+            document.getElementById('player-avatar').style.left = percentage + "%";
+        }
+
+        function showQ() {
+            const q = activeSubject.shuffledQuestions[currentQIdx];
+            document.getElementById('question-counter').innerText = `СУРОО ${currentQIdx + 1}/${activeSubject.shuffledQuestions.length}`;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('current-session-score').innerText = `УПАЙ: ${sessionScore}`;
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            q.displayOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full p-6 text-left border-2 border-gray-100 rounded-[24px] font-bold text-gray-700 bg-white shadow-sm transition-all";
+                btn.innerText = opt.text;
+                btn.onclick = () => check(opt.isCorrect, btn);
+                container.appendChild(btn);
+            });
+            document.getElementById('feedback').classList.add('hidden');
+        }
+
+        function check(isCorrect, btn) {
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.disabled = true);
+            const fb = document.getElementById('feedback');
+            fb.classList.remove('hidden');
+            if (isCorrect) {
+                sessionScore++;
+                btn.classList.add('bg-green-500', 'text-white', 'border-green-500');
+                fb.innerText = "Туура! Азаматсыз! 🚀";
+                fb.className = "mt-8 p-6 rounded-2xl bg-green-100 text-green-700 block font-black";
+            } else {
+                btn.classList.add('bg-red-500', 'text-white', 'border-red-500');
+                fb.innerText = "Ката! 🧐";
+                fb.className = "mt-8 p-6 rounded-2xl bg-red-100 text-red-700 block font-black";
+            }
+            setTimeout(() => {
+                currentQIdx++;
+                updateAvatarPos();
+                if (currentQIdx < activeSubject.shuffledQuestions.length) showQ();
+                else finish();
+            }, 1200);
+        }
+
+        function finish() {
+            document.getElementById('quiz-area').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-text').innerText = `Топтогон упайыңыз: ${sessionScore}`;
+            currentUser.totalScore += sessionScore;
+            localStorage.setItem('bilim_user', JSON.stringify(currentUser));
+            document.getElementById('total-score').innerText = currentUser.totalScore;
+        }
+
+        function backToSubjects() {
+            renderSubjects();
+        }
+
+        function logout() {
+            localStorage.removeItem('bilim_user');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
